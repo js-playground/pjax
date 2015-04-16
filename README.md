@@ -2,7 +2,7 @@
 pushState + ajax = pjax, a lightweight pure javascript pjax library
 
 
-documentation coming soon...
+##### documentation not yet complete, Examples to come next
 
 options
 ==============
