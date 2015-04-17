@@ -1,6 +1,8 @@
 # pjax
 pushState + ajax = pjax, a lightweight pure javascript pjax library
 
+##### The Why
+so your asking yourself, why another pjax library? simply put, IMHO, most other libraries are overcomplicated, usage is only one way and most importantly the line between the library and functionality is muddled.
 
 ##### documentation not yet complete, Examples to come next
 
@@ -26,6 +28,37 @@ key | default | description
 
 Examples coming soon
 ====================
+NOTE: these are just some examples of usage, you may use it how you see fit.
+```javascript
+var partialOptions = { push:false };
+window.PjaxPartial = window.PjaxPartial || Pjax.New(partialOptions);
+```
+
+Methods
+=======
+
+#####Pjax.New
+Creates a new Pjax plugin instance
+```javascript
+Pjax.New(options)
+
+options - is any options that you may wish to override from the defaults, use {} if none.
+```
+
+#####PjaxPlugin.Load ( PjaxPlugin is the plugin returned from Pjax.New )
+Loads content via href of the passed in anchor tag, and replaces the containers content
+NOTE: ?pjax=1 is added to the url if no other query parameters exists to ensure the request 
+is not cached as caching causes issues when hitting the browser back button for partial content.
+```javascript
+PjaxPlugin.Load(e, a, ct, oneTimeOptions)
+
+e              - is the click event of the anchor tag, needed to preventDefault operations
+a              - the anchor element containing the href
+ct             - the container element whose content will be replaced
+oneTimeOptions - this can contain any options that you may want to override including the 
+                 default used when calling Pjax.New, but just for this request, in order to handle one off 
+                 situations without the need to initialize another plugin instance.
+```
 
 Contributing
 ============
