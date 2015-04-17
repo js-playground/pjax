@@ -4,8 +4,6 @@ pushState + ajax = pjax, a lightweight pure javascript pjax library
 ##### The Why
 so your asking yourself, why another pjax library? simply put, IMHO, most other libraries are overcomplicated, usage is only one way and most importantly the line between the library and functionality is muddled.
 
-##### documentation not yet complete, Examples to come next
-
 options
 ==============
 
@@ -26,12 +24,43 @@ key | default | description
 `onSuccess` | null | fires after http response was 200 and html content added to the container
 `onFailure` | | fires after http response was not 200, this gets passed link, container and responseText
 
-Examples coming soon
+Examples
 ====================
 NOTE: these are just some examples of usage, you may use it how you see fit.
 ```javascript
-var partialOptions = { push:false };
-window.PjaxPartial = window.PjaxPartial || Pjax.New(partialOptions);
+// Initialize the Plugin somewhere in your javascript, doesn't have to be on the window
+var pageOptions = { cache: true, maxCacheLength: 15, onUpdateCachedValues: _updateCachedFormValues };
+window.PjaxPage = window.PjaxPage || Pjax.New(pageOptions);
+
+// there are 2 approaches, but you will most likely implement both:
+
+// 1 - setup some global listeners to always perform the Plugin call
+// pure javascript
+var links = document.querySelectorAll('a[data-pjax-page]');
+
+for(var i = 0, len = links.length; i < len; i++ ) {
+    links[i].onclick = function(e) {
+    
+        var container = // find container
+    
+        PjaxPage.Load(e, this, container, null);
+    }
+}
+// Jquery
+$(document).on('click', 'a[data-pjax-page]', function(e) {
+    var container = $(document).find(this).closest('[data-pjax-page-ct]');
+
+    PjaxPage.Load(e, this, container[0], null);
+});
+
+// 2 - subscribe each request individually
+// pure javascript
+var link = // find link
+var container = // find container
+var additionalHeaders = {};
+additionalHeaders["X-CSRF-Token"] = // token
+
+PjaxPage.Load(e, link, container, { headers: additionalHeaders });
 ```
 
 Methods
