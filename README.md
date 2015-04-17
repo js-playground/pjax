@@ -46,11 +46,25 @@ options - is any options that you may wish to override from the defaults, use {}
 ```
 
 #####PjaxPlugin.Load ( PjaxPlugin is the plugin returned from Pjax.New )
-Loads content via href of the passed in anchor tag, and replaces the containers content
+Loads content from the href of the passed in anchor tag, and replaces the containers content
 NOTE: ?pjax=1 is added to the url if no other query parameters exists to ensure the request 
 is not cached as caching causes issues when hitting the browser back button for partial content.
 ```javascript
 PjaxPlugin.Load(e, a, ct, oneTimeOptions)
+
+e              - is the click event of the anchor tag, needed to preventDefault operations
+a              - the anchor element containing the href
+ct             - the container element whose content will be replaced
+oneTimeOptions - this can contain any options that you may want to override including the 
+                 default used when calling Pjax.New, but just for this request, in order to handle one off 
+                 situations without the need to initialize another plugin instance.
+```
+
+#####PjaxPlugin.Submit ( PjaxPlugin is the plugin returned from Pjax.New )
+Submits content to the href of the passed in anchor tag, and replaces the containers content
+NOTE: push, replace and cache options are all ignored for submits so no need to update those options
+```javascript
+PjaxPlugin.Submit(e, a, ct, oneTimeOptions)
 
 e              - is the click event of the anchor tag, needed to preventDefault operations
 a              - the anchor element containing the href
