@@ -157,7 +157,7 @@ var Pjax = window.Pjax || (function(window, document) {
     return this.pushStateSupported;
   };
 
-  PjaxPlugin.prototype.Load = function(e, a, ct, onetimeOptions) {
+  PjaxPlugin.prototype.Load = function(e, url, el, ct, onetimeOptions) {
 
     if((this.options.push || this.options.replace) && !this.isPushStateSupported) {
       return true;
@@ -169,7 +169,6 @@ var Pjax = window.Pjax || (function(window, document) {
 
     var options = onetimeOptions == null ? this.options : _extend(this.options, onetimeOptions),
         state = { id: _uniqueId() },
-        url = a.href,
         getUrl = url.indexOf("?") == -1 ? url + "?pjax=1" : url, // must add query param to prevent browser caching, because of hitting back this prevents browser from loading just ajax loaded content
         xhr = new XMLHttpRequest();
 
@@ -204,12 +203,16 @@ var Pjax = window.Pjax || (function(window, document) {
       state.id = _uniqueId();
     }
 
+    if(options.onBusy != null) {
+      options.onBusy(el, ct);
+    }
+
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
 
         // success or failure doesn't matter, must still call
         if(options.onComplete != null) {
-          options.onComplete(a, ct);
+          options.onComplete(el, ct);
         }
 
         if(xhr.status === 200) {
@@ -249,12 +252,12 @@ var Pjax = window.Pjax || (function(window, document) {
           }
 
           if(options.onSuccess) {
-            options.onSuccess(a, ct);
+            options.onSuccess(el, ct);
           }
 
         } else {
           if(options.onFailure) {
-            options.onFailure(a, ct, xhr.responseText);
+            options.onFailure(el, ct, xhr.responseText);
             return
           }
 
@@ -281,7 +284,7 @@ var Pjax = window.Pjax || (function(window, document) {
   };
 
   // push, replace and cache are ignored in Submit as there should never be a need any of them
-  PjaxPlugin.prototype.Submit = function(e, a, ct, onetimeOptions) {
+  PjaxPlugin.prototype.Submit = function(e, url, el, ct, onetimeOptions) {
 
     if(e != null) {
       e.preventDefault();
@@ -290,15 +293,18 @@ var Pjax = window.Pjax || (function(window, document) {
     var options = onetimeOptions == null ? this.options : _extend(this.options, onetimeOptions),
         isForm = ct.tagName == "FORM" ? true : false,
         data = isForm ? new FormData(ct) : null,
-        url = a.href,
         xhr = new XMLHttpRequest();
 
+    if(options.onBusy != null) {
+      options.onBusy(el, ct);
+    }
+    
     xhr.onreadystatechange = function() {
       if (xhr.readyState === 4) {
 
         // success or failure doesn't matter, must still call
         if(options.onComplete != null) {
-          options.onComplete(a, ct);
+          options.onComplete(el, ct);
         }
 
         if(xhr.status === 200) {
@@ -307,13 +313,13 @@ var Pjax = window.Pjax || (function(window, document) {
           _evalInnerHtmlJavascript(ct);
 
           if(options.onSuccess) {
-            options.onSuccess(a, ct);
+            options.onSuccess(el, ct);
           }
 
         } else {
 
           if(options.onFailure) {
-            options.onFailure(a, ct, xhr.responseText);
+            options.onFailure(el, ct, xhr.responseText);
             return
           }
 
