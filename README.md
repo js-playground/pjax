@@ -43,24 +43,25 @@ for(var i = 0, len = links.length; i < len; i++ ) {
     
         var container = // find container
     
-        PjaxPage.Load(e, this, container, null);
+        PjaxPage.Load(e, this.href, this, container, null);
     }
 }
 // Jquery
 $(document).on('click', 'a[data-pjax-page]', function(e) {
     var container = $(document).find(this).closest('[data-pjax-page-ct]');
 
-    PjaxPage.Load(e, this, container[0], null);
+    PjaxPage.Load(e, this.href, this, container[0], null);
 });
 
 // 2 - subscribe each request individually
 // pure javascript
-var link = // find link
+var triggerElement = // find link
+var url = // get/set url
 var container = // find container
 var additionalHeaders = {};
 additionalHeaders["X-CSRF-Token"] = // token
 
-PjaxPage.Load(e, link, container, { headers: additionalHeaders });
+PjaxPage.Load(e, url, triggerElement, container, { headers: additionalHeaders });
 ```
 
 Methods
@@ -79,10 +80,11 @@ Loads content from the href of the passed in anchor tag, and replaces the contai
 NOTE: ?pjax=1 is added to the url if no other query parameters exists to ensure the request 
 is not cached as caching causes issues when hitting the browser back button for partial content.
 ```javascript
-PjaxPlugin.Load(e, a, ct, oneTimeOptions)
+PjaxPlugin.Load(e, url, el, ct, oneTimeOptions)
 
 e              - is the click event of the anchor tag, needed to preventDefault operations
-a              - the anchor element containing the href
+url            - the url to load
+el             - the element that triggered the Load
 ct             - the container element whose content will be replaced
 oneTimeOptions - this can contain any options that you may want to override including the 
                  default used when calling Pjax.New, but just for this request, in order to handle one off 
@@ -93,10 +95,11 @@ oneTimeOptions - this can contain any options that you may want to override incl
 Submits content to the href of the passed in anchor tag, and replaces the containers content
 NOTE: push, replace and cache options are all ignored for submits so no need to update those options
 ```javascript
-PjaxPlugin.Submit(e, a, ct, oneTimeOptions)
+PjaxPlugin.Submit(e, url, el, ct, oneTimeOptions)
 
 e              - is the click event of the anchor tag, needed to preventDefault operations
-a              - the anchor element containing the href
+url            - the url to load
+el             - the element that triggered the Load
 ct             - the container element whose content will be replaced
 oneTimeOptions - this can contain any options that you may want to override including the 
                  default used when calling Pjax.New, but just for this request, in order to handle one off 
