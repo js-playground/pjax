@@ -124,7 +124,9 @@ var Pjax = window.Pjax || (function(window, document) {
       popstateEnabled = true;
 
       window.addEventListener("popstate", function(e) {
-        _popState(this, e)
+        if(currentId !== null){
+          _popState(this, e);
+        }
       });
     }
   }
@@ -134,7 +136,7 @@ var Pjax = window.Pjax || (function(window, document) {
     _init(this);
   }
 
-  // Link and Container is passed to all onXX methods
+  // Triggering element, container and xhr are passed to all onXX methods
   PjaxPlugin.prototype.options = {
     push: true,                 // use pushState to add a browser history entry upon navigation
     replace: false,             // use replaceState to update the current entry rather than adding a new one. If push is false this option is disregarded.
@@ -150,7 +152,8 @@ var Pjax = window.Pjax || (function(window, document) {
                                 // until your browser blows up so if this is set to zero cache automatically gets set to false.
     maxCacheLength: -1,         // if maxCacheLength is set to zero, then cache is set to false.
     method: "POST",             // used only for non "GET" aka Load requests
-    headers: null               // javascript object {} additional headers that may need to be passed, such as CSRF toekn for Submit..., key = propery name.. value = key's value
+    headers: null,              // javascript object {} additional headers that may need to be passed, such as CSRF token for Submit..., key = propery name.. value = key's value
+    autoReplaceHTML: true       // Determines if innerHTML is replaced. If set to false, push, replace and cache are ignored    
   };
 
   PjaxPlugin.prototype.isPushStateSupported = function() {
@@ -174,7 +177,7 @@ var Pjax = window.Pjax || (function(window, document) {
 
     // if trying to load the same page and it exists in cache
     // update cache with current content update timeout to new value and return
-    if(cacheTimeouts.hasOwnProperty(currentId)) {
+    if(options.autoReplaceHTML && cacheTimeouts.hasOwnProperty(currentId)) {
 
       if(options.onUpdateCachedValues != null) {
         options.onUpdateCachedValues(currentId);
@@ -191,7 +194,7 @@ var Pjax = window.Pjax || (function(window, document) {
     // if this is the first page load and we want to push and not replace
     // so we can hit back all the way to the initial page load and even have 
     // it able to be loaded from cache
-    if(currentId === null && options.cache && options.push && !options.replace) {
+    if(currentId === null && options.cache && options.push && !options.replace && options.autoReplaceHTML) {
       // can't reuse same state object or setIntervals won't function correctly
       newState = { id: state.id };
       currentId = newState.id;
@@ -212,57 +215,63 @@ var Pjax = window.Pjax || (function(window, document) {
 
         // success or failure doesn't matter, must still call
         if(options.onComplete != null) {
-          options.onComplete(el, ct);
+          options.onComplete(el, ct, xhr);
         }
 
         if(xhr.status === 200) {
-          ct.innerHTML = xhr.responseText;
 
-          if(options.cache && options.push) {
+          if (options.autoReplaceHTML) { 
+            ct.innerHTML = xhr.responseText;
 
-            if(options.replace && cacheTimeouts.hasOwnProperty(currentId)) {
-              clearTimeout(cacheTimeouts[currentId]);
-              cache[currentId] = ct.innerHTML;
-              cacheTimeouts[currentId] = setTimeout(function(){ _removeCache(currentId); }, options.cacheTimeout);
+            if(options.cache && options.push) {
 
-            } else {
-              currentId = state.id;
-              ct.setAttribute("pjax-ct-id", state.id);
+              if(options.replace && cacheTimeouts.hasOwnProperty(currentId)) {
+                clearTimeout(cacheTimeouts[currentId]);
+                cache[currentId] = ct.innerHTML;
+                cacheTimeouts[currentId] = setTimeout(function(){ _removeCache(currentId); }, options.cacheTimeout);
 
-              if(options.maxCacheLength > 0 && ids.length === options.maxCacheLength) {
-                _removeCache(ids[0]);
+              } else {
+                currentId = state.id;
+                ct.setAttribute("pjax-ct-id", state.id);
+
+                if(options.maxCacheLength > 0 && ids.length === options.maxCacheLength) {
+                  _removeCache(ids[0]);
+                }
+
+                ids.push(newState.id);
+                cache[state.id] = ct.innerHTML;
+                cacheTimeouts[state.id] = setTimeout(function(){ _removeCache(state.id); }, options.cacheTimeout);
+              }
+            }
+
+            _evalInnerHtmlJavascript(ct);
+
+            if(options.push) {
+              if(options.replace){
+                window.history.replaceState(JSON.stringify(state), ct.title || document.title, url)
+              } else {
+                window.history.pushState(JSON.stringify(state), ct.title || document.title, url)
               }
 
-              ids.push(newState.id);
-              cache[state.id] = ct.innerHTML;
-              cacheTimeouts[state.id] = setTimeout(function(){ _removeCache(state.id); }, options.cacheTimeout);
+              document.title = ct.title || document.title;
             }
-          }
-
-          _evalInnerHtmlJavascript(ct);
-
-          if(options.push) {
-            if(options.replace){
-              window.history.replaceState(JSON.stringify(state), ct.title || document.title, url)
-            } else {
-              window.history.pushState(JSON.stringify(state), ct.title || document.title, url)
-            }
-
-            document.title = ct.title || document.title;
-          }
+        }
 
           if(options.onSuccess) {
-            options.onSuccess(el, ct);
+            options.onSuccess(el, ct, xhr);
           }
 
         } else {
           if(options.onFailure) {
-            options.onFailure(el, ct, xhr.responseText);
+            options.onFailure(el, ct, xhr);
             return
           }
+           
+          if (options.autoReplaceHTML) { 
+            ct.innerHTML = xhr.responseText;
+            _evalInnerHtmlJavascript(ct);
+          }
 
-          ct.innerHTML = xhr.responseText;
-          _evalInnerHtmlJavascript(ct);
         }
       }
     };
@@ -284,15 +293,16 @@ var Pjax = window.Pjax || (function(window, document) {
   };
 
   // push, replace and cache are ignored in Submit as there should never be a need any of them
-  PjaxPlugin.prototype.Submit = function(e, url, el, ct, onetimeOptions) {
+  PjaxPlugin.prototype.Submit = function(e, url, el, ct, form, onetimeOptions) {
 
     if(e != null) {
       e.preventDefault();
     }
 
     var options = onetimeOptions == null ? this.options : _extend(this.options, onetimeOptions),
-        isForm = ct.tagName == "FORM" ? true : false,
-        data = isForm ? new FormData(ct) : null,
+        isForm = form.tagName == "FORM" ? true : false,
+        data = isForm ? new FormData(form) : null,
+        // url = a.href,
         xhr = new XMLHttpRequest();
 
     if(options.onBusy != null) {
@@ -304,27 +314,31 @@ var Pjax = window.Pjax || (function(window, document) {
 
         // success or failure doesn't matter, must still call
         if(options.onComplete != null) {
-          options.onComplete(el, ct);
+          options.onComplete(el, ct, xhr);
         }
 
         if(xhr.status === 200) {
-
-          ct.innerHTML = xhr.responseText;
-          _evalInnerHtmlJavascript(ct);
+          
+          if (options.autoReplaceHTML) { 
+            ct.innerHTML = xhr.responseText;
+            _evalInnerHtmlJavascript(ct);
+          }
 
           if(options.onSuccess) {
-            options.onSuccess(el, ct);
+            options.onSuccess(el, ct, xhr);
           }
 
         } else {
 
           if(options.onFailure) {
-            options.onFailure(el, ct, xhr.responseText);
+            options.onFailure(el, ct, xhr);
             return
-          }
+          } 
 
-          ct.innerHTML = xhr.responseText;
-          _evalInnerHtmlJavascript(ct);
+          if (options.autoReplaceHTML) { 
+            ct.innerHTML = xhr.responseText;
+            _evalInnerHtmlJavascript(ct);
+          }
         }
       }
     };
